@@ -24,15 +24,23 @@ DIM = "#9fb3c8"
 GOLD = "#ffe27a"
 AI = "#7cc2e6"
 
+# 遅れて出す動きは SMIL で書く。CSS の animation-delay は約 2 秒を超えると画像の SVG で発火しなかった
 STYLE = """
-.c{opacity:0;animation:show .01s steps(1) forwards}
 .blink{animation:blink 1s steps(1) infinite}
-.lvup{animation:lvup 1.6s steps(1) 1.2s 1 both}
-@keyframes show{to{opacity:1}}
 @keyframes blink{50%{opacity:0}}
-@keyframes lvup{0%,25%,50%,75%{opacity:1}12%,37%,62%{opacity:.15}}
-@media (prefers-reduced-motion:reduce){.c{opacity:1;animation:none}.blink,.lvup{animation:none}}
+@media (prefers-reduced-motion:reduce){.c,.lvup{opacity:1!important}.blink{animation:none}}
 """
+
+
+def appear(start):
+    """start 秒後に表示する要素の (属性, 子要素)。"""
+    return ' class="c" opacity="0"', f'<set attributeName="opacity" to="1" begin="{start:.2f}s" fill="freeze"/>'
+
+
+LVUP = (
+    '<animate attributeName="opacity" values="1;.15;1;.15;1;.15;1" '
+    'keyTimes="0;.12;.25;.37;.5;.62;1" dur="1.6s" begin="1.2s" calcMode="discrete"/>'
+)
 
 
 class Font:
@@ -78,27 +86,28 @@ class Canvas:
         sc = size / self.font.upm
         parts = []
         for i, ch in enumerate(s):
-            anim = ""
-            if start is not None:
-                anim = f' class="c" style="animation-delay:{start + i * step:.2f}s"'
+            attrs, child = appear(start + i * step) if start is not None else ("", "")
             if ch == "▶":
-                parts.append(self._triangle(x, y, size, anim))
+                parts.append(self._triangle(x, y, size, attrs, child))
             elif not ch.isspace():
                 name = self.font.name(ch)
                 self.used.add(name)
                 parts.append(
                     f'<use href="#{gid(name)}" transform="translate({x:.1f} {y:.1f}) '
-                    f'scale({sc:.4f} {-sc:.4f})"{anim}/>'
+                    f'scale({sc:.4f} {-sc:.4f})"{attrs}>{child}</use>'
                 )
             x += self.font.advance(ch) * sc
         klass = f' class="{cls}"' if cls else ""
         self.body.append(f'<g fill="{fill}"{klass}>{"".join(parts)}</g>')
         return x
 
-    def _triangle(self, x, y, size, anim):
+    def _triangle(self, x, y, size, attrs, child):
         top, mid, bottom = y - size * 0.78, y - size * 0.4, y - size * 0.02
         right = x + size * 0.62
-        return f'<polygon points="{x:.1f},{top:.1f} {right:.1f},{mid:.1f} {x:.1f},{bottom:.1f}"{anim}/>'
+        return (
+            f'<polygon points="{x:.1f},{top:.1f} {right:.1f},{mid:.1f} {x:.1f},{bottom:.1f}"'
+            f"{attrs}>{child}</polygon>"
+        )
 
     def window(self, x, y, w, h, title=None, title_size=20):
         # 外側の黒い縁で、ライトモードの白背景でも白線が溶けないようにする
@@ -140,7 +149,8 @@ def message(font):
     c.window(6, 6, W - 12, 138)
     c.text("Hiroki が あらわれた！", 44, 64, 26, start=0.3)
     c.text("しつじ セバスチャン が なかまに くわわった！", 44, 110, 26, start=1.9)
-    c.raw('<g class="c" style="animation-delay:3.7s"><g class="blink">')
+    attrs, child = appear(3.7)
+    c.raw(f'<g{attrs}>{child}<g class="blink">')
     c.text("▼", W - 64, 132, 20)
     c.raw("</g></g>")
     return c
@@ -169,7 +179,9 @@ def status(font):
             c.text(value, 448, y, 22)
         else:
             x = c.text("あそびにん → ", 448, y, 22)
-            c.text("けんじゃ", x, y, 22, GOLD, cls="lvup")
+            c.raw(f'<g class="lvup">{LVUP}')
+            c.text("けんじゃ", x, y, 22, GOLD)
+            c.raw("</g>")
     return c
 
 
