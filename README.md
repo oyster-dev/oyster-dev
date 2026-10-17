@@ -29,11 +29,7 @@
 <br>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/oyster-dev/oyster-dev/output/snake-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/oyster-dev/oyster-dev/output/snake-light.svg">
-    <img src="https://raw.githubusercontent.com/oyster-dev/oyster-dev/output/snake-light.svg" width="100%" alt="くさ を たべる へび">
-  </picture>
+  <img src="https://raw.githubusercontent.com/oyster-dev/oyster-dev/output/adventure.svg" width="100%" alt="ぼうけんの ちず と きろく — 1ねんぶんの かつどうを ちけいに した ちずと、たびをした にっすう・レベル">
 </p>
 
 <p align="center"><sub>この ぼうけんのしょ は しつじ セバスチャン と いっしょに つくりました</sub></p>

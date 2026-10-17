@@ -79,6 +79,7 @@ class Canvas:
         self.height = height
         self.label = label
         self.used = set()
+        self.defs = []
         self.body = []
 
     def text(self, s, x, y, size=24, fill=WHITE, start=None, step=0.07, cls=""):
@@ -129,7 +130,7 @@ class Canvas:
         self.body.append(s)
 
     def svg(self):
-        defs = "".join(
+        defs = "".join(self.defs) + "".join(
             f'<path id="{gid(n)}" d="{self.font.path(n)}"/>' for n in sorted(self.used)
         )
         return (

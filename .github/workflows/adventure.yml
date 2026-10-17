@@ -1,0 +1,49 @@
+name: adventure
+
+on:
+  schedule:
+    - cron: "0 15 * * *" # 毎日 0:00 JST
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # output ブランチへの push
+    env:
+      # google/fonts の DotGothic16 を最終更新コミットと内容のハッシュで固定する
+      FONT_URL: https://raw.githubusercontent.com/google/fonts/d5ef175583bb5f7a3b01bc6c4603dd4a1f445f34/ofl/dotgothic16/DotGothic16-Regular.ttf
+      FONT_SHA256: 3ad9af88726d42b40f7f365f0dcac785af73cf20ea6f1d5b44e57cc21150b8f1
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: フォントと fonttools を用意する
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/font.ttf" "$FONT_URL"
+          echo "$FONT_SHA256  $RUNNER_TEMP/font.ttf" | sha256sum -c -
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet fonttools==4.66.1
+
+      - name: 草のデータを取得する
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOGIN: ${{ github.repository_owner }}
+        run: gh api graphql -F query=@tools/calendar.graphql -f login="$LOGIN" > "$RUNNER_TEMP/calendar.json"
+
+      - name: ちず と きろく を描く
+        run: |
+          cd tools
+          "$RUNNER_TEMP/venv/bin/python" adventure.py "$RUNNER_TEMP/font.ttf" "$RUNNER_TEMP/calendar.json" "$GITHUB_WORKSPACE/dist"
+
+      - uses: crazy-max/ghaction-github-pages@v5.0.0
+        with:
+          target_branch: output
+          build_dir: dist
+          jekyll: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
